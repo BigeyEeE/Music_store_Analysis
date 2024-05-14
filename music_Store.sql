@@ -126,3 +126,141 @@ SELECT * FROM PLAYLIST
 SELECT * FROM PLAYLIST_TRACK
 SELECT * FROM TRACK
 
+
+
+-- MUSIC STORE ANALYSIS 
+--  QUESTION 
+
+
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+
+-- Question Set 1 
+--1. Who is the senior most employee based on job title? 
+
+SELECT FIRST_NAME,
+	   LAST_NAME,
+	   TITLE
+	  FROM EMPLOYEE
+ORDER BY LEVELS DESC
+LIMIT 1
+
+--2. Which countries have the most Invoices? 
+SELECT BILLING_COUNTRY,
+	   COUNT(INVOICE_ID) AS TOTAL_INVOICES
+       FROM INVOICE
+GROUP BY 1
+ORDER BY 2 DESC
+LIMIT 3 
+
+--3. What are top 3 values of total invoice? 
+SELECT INVOICE_ID,
+		CAST(SUM(TOTAL) AS NUMERIC (10,2))AS TOTAL_REVENUE
+		FROM INVOICE
+		GROUP BY 1
+		ORDER BY 2 DESC
+		LIMIT 3 
+
+--4. Which city has the best customers? We would like to throw a promotional Music
+--Festival in the city we made the most money. Write a query that returns one city that 
+--has the highest sum of invoice totals. Return both the city name & sum of all invoice 
+--totals 
+
+SELECT BILLING_CITY AS CITY,
+	   CAST(SUM(TOTAL)AS NUMERIC (10,2)) AS TOTAL_INVOICE
+       FROM INVOICE 
+	   GROUP BY CITY
+	   ORDER BY 2 DESC 
+	   LIMIT 1
+
+--5. Who is the best customer? The customer who has spent the most money will be 
+-- declared the best customer. Write a query that returns the person who has spent the 
+-- most money 
+SELECT C.CUSTOMER_ID,	
+	   C.FIRST_NAME,
+	   C.LAST_NAME,
+	   CAST(SUM(I.TOTAL)AS NUMERIC (10,2)) AS TOTAL_SPENDING
+	   FROM CUSTOMER C
+	JOIN 
+	INVOICE AS I ON 
+	C.CUSTOMER_ID = I.CUSTOMER_ID
+	GROUP BY 1,2,3
+	ORDER BY 4 DESC
+    LIMIT 5 
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+-- Question Set 2 – Moderate 
+---------------------------------------------------------------------------------------------------------------------------------------------
+-- 1. Write query to return the email, first name, last name, & Genre of all Rock Music
+-- listeners. Return your list ordered alphabetically by email starting with 'A'.
+
+SELECT 
+    C.EMAIL,
+    C.FIRST_NAME,
+    C.LAST_NAME,
+    G.NAME AS GENRE
+FROM 
+    CUSTOMER AS C
+    JOIN INVOICE AS I ON C.CUSTOMER_ID = I.CUSTOMER_ID
+    JOIN INVOICE_LINE AS IL ON I.INVOICE_ID = IL.INVOICE_ID
+    JOIN TRACK AS T ON IL.TRACK_ID = T.TRACK_ID
+    JOIN GENRE AS G ON T.GENRE_ID = G.GENRE_ID
+WHERE 
+    G.NAME = 'Rock' AND C.FIRST_NAME LIKE 'A%'
+	ORDER BY C.EMAIL;
+
+
+-- 2. Let's invite the artists who have written the most rock music in our dataset. Write a 
+-- query that returns the Artist name and total track count of the top 10 rock bands 
+
+SELECT * FROM ARTIST
+SELECT * FROM TRACK
+SELECT * FROM GENRE
+
+SELECT	A.NAME AS ARTIST_NAME,
+		G.NAME,
+		COUNT(T.TRACK_ID) AS TOTAL_TRACK
+		FROM ARTIST AS A 
+		JOIN ALBUM AS AB
+		ON 
+		A.ARTIST_ID=AB.ARTIST_ID
+		JOIN TRACK AS T
+		ON
+		AB.ALBUM_ID=T.ALBUM_ID
+		JOIN GENRE AS G 
+		ON T.GENRE_ID=G.GENRE_ID
+		WHERE G.NAME = 'Rock'
+		GROUP BY 1,2
+		ORDER BY 3 DESC
+		LIMIT 10;
+		
+		
+-- 3. Return all the track names that have a song length longer than the average song length. 
+-- Return the Name and Milliseconds for each track. Order by the song length with the 
+-- longest songs listed first 
+--   AVG_SONG_LENGHT-393599
+
+SELECT	NAME,
+		MILLISECONDS AS SONG_LENGHT
+FROM TRACK
+		WHERE MILLISECONDS > 393599
+ORDER BY 2 DESC
+
+-- ALTERNATE WAY BY SUBQUERY
+	
+SELECT
+    NAME,
+    MILLISECONDS AS SONG_LENGTH
+FROM
+    (
+        SELECT
+            NAME,
+            MILLISECONDS,
+            AVG(MILLISECONDS) OVER() AS AVG_SONG_LENGTH
+        FROM
+            TRACK
+    ) AS subquery
+WHERE
+    MILLISECONDS > AVG_SONG_LENGTH
+	ORDER BY MILLISECONDS DESC;
