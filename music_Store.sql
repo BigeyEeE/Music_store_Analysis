@@ -344,3 +344,61 @@ GROUP BY 1,2
 SELECT COUNTRY , GENRE
 	FROM CTE 
 	WHERE RNK = 1
+
+
+
+-- 3. Write a query that determines the customer that has spent the most on music for each 
+-- country. Write a query that returns the country along with the top customer and how 
+-- much they spent. For countries where the top amount spent is shared, provide all 
+-- customers who spent this amount
+
+WITH RECURSIVE customer_with_country AS (
+    SELECT 
+        customer.customer_id,
+        first_name,
+        last_name,
+        billing_country,
+        cast(SUM(total) as numeric (10,2)) AS total_spending
+    FROM 
+        invoice
+        JOIN customer ON customer.customer_id = invoice.customer_id
+    GROUP BY 
+        1,2,3,4
+), 
+country_genre_spending AS (
+    SELECT 
+        cc.billing_country,
+        g.name AS genre,
+        SUM(il.unit_price * il.quantity) AS total_spending_per_genre
+    FROM 
+        customer_with_country cc
+        JOIN invoice AS i ON cc.customer_id = i.customer_id
+        JOIN invoice_line AS il ON i.invoice_id = il.invoice_id
+        JOIN track AS t ON il.track_id = t.track_id
+        JOIN genre AS g ON t.genre_id = g.genre_id
+    GROUP BY 
+        cc.billing_country, g.name
+), 
+country_max_genre_spending AS (
+    SELECT 
+        billing_country,
+        MAX(total_spending_per_genre) AS max_genre_spending
+    FROM 
+        country_genre_spending
+    GROUP BY 
+        billing_country
+)
+SELECT 
+    cg.billing_country,
+    cg.total_spending,
+    cg.first_name,
+    cg.last_name,
+    cg.customer_id,
+    cgs.genre
+FROM 
+    customer_with_country cg
+    JOIN country_max_genre_spending mgs ON cg.billing_country = mgs.billing_country
+    JOIN country_genre_spending cgs ON cg.billing_country = cgs.billing_country
+        AND cgs.total_spending_per_genre = mgs.max_genre_spending
+ORDER BY 
+    1;
