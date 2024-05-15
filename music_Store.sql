@@ -271,9 +271,6 @@ WHERE
 -- 1. Find how much amount spent by each customer on artists? Write a query to return 
 -- customer name, artist name and total spent.
 
-select * from customer
-select * from artist
-select * from invoice_line
 
 	-- solution by join 
 	
@@ -321,3 +318,29 @@ JOIN album alb ON alb.album_id = t.album_id
 JOIN best_selling_artist bsa ON bsa.artist_id = alb.artist_id
 GROUP BY 1,2,3,4
 ORDER BY 5 DESC;
+
+
+-- 2. We want to find out the most popular music Genre for each country. We determine the 
+-- most popular genre as the genre with the highest amount of purchases. Write a query 
+-- that returns each country along with the top Genre. For countries where the maximum 
+-- number of purchases is shared return all Genres 
+
+
+WITH CTE AS 
+(SELECT	I.BILLING_COUNTRY AS COUNTRY,
+		G.NAME AS GENRE,
+		CAST(SUM(I.TOTAL)AS NUMERIC (10,2)) AS TOTAL_SPENT,
+		ROW_NUMBER() OVER(PARTITION BY I.BILLING_COUNTRY ORDER BY CAST(SUM(I.TOTAL)AS NUMERIC (10,2)) DESC) AS RNK
+FROM INVOICE AS I 
+JOIN
+INVOICE_LINE IL ON I.INVOICE_ID = IL.INVOICE_ID
+JOIN 
+TRACK T ON IL.TRACK_ID = T.TRACK_ID
+JOIN 
+GENRE G ON T.GENRE_ID = G.GENRE_ID
+GROUP BY 1,2 
+)
+
+SELECT COUNTRY , GENRE
+	FROM CTE 
+	WHERE RNK = 1
